@@ -17,9 +17,23 @@ Terminal-friendly diagram rendering library for Go. Render flowcharts, sequence 
 go get github.com/orchard9/tui-diagrams
 ```
 
-## Demo
+## Quick Start Demo
 
-Run the demo to see beautiful examples of all diagram types:
+Run the quick demo to see all features in action:
+
+```bash
+go run demo.go
+```
+
+This shows:
+- Flowcharts with decision nodes
+- Sequence diagrams with actors
+- Bar charts (horizontal and vertical with colors)
+- Mermaid syntax parsing (flowchart and sequence)
+
+## Full Demo
+
+For a comprehensive showcase with more examples:
 
 ```bash
 go run cmd/demo/main.go
