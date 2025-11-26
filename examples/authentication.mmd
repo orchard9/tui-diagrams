@@ -1,0 +1,13 @@
+graph TD
+    Start[User Login] --> Input[Enter Credentials]
+    Input --> Validate{Valid Format?}
+    Validate -->|Yes| Check[Check Database]
+    Validate -->|No| Error[Show Error]
+    Check --> Exists{User Exists?}
+    Exists -->|Yes| Verify[Verify Password]
+    Exists -->|No| Error
+    Verify --> Match{Password Match?}
+    Match -->|Yes| Token[Generate JWT]
+    Match -->|No| Error
+    Token --> Success[Login Success]
+    Error --> Input

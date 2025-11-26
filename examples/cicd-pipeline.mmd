@@ -1,0 +1,10 @@
+graph LR
+    Commit(Git Commit) --> Build[Build Code]
+    Build --> Test[Run Tests]
+    Test --> Quality{Quality Gate}
+    Quality -->|Pass| Stage[Stage Deploy]
+    Quality -->|Fail| Notify[Notify Team]
+    Stage --> Approve{Manual Approval}
+    Approve -->|Yes| Prod[Production Deploy]
+    Approve -->|No| Rollback[Rollback]
+    Prod --> Monitor((Monitor))

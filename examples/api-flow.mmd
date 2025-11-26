@@ -1,0 +1,11 @@
+sequenceDiagram
+    participant Client
+    participant Gateway
+    participant Auth
+    participant Database
+    Client->>Gateway: POST /api/data
+    Gateway->>Auth: Validate token
+    Auth-->>Gateway: Token valid
+    Gateway->>Database: Query data
+    Database-->>Gateway: Return results
+    Gateway-->>Client: 200 OK
