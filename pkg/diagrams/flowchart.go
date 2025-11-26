@@ -406,15 +406,11 @@ func renderVerticalEdgeWithTarget(edge Edge, targetNode Node) string {
 	var b strings.Builder
 
 	if edge.Label != "" {
-		// Edge with label - show label and target
+		// Edge with label - just show label, not target (target node renders separately)
 		b.WriteString("    ")
 		b.WriteString(BoxVertical)
 		b.WriteString(" ")
 		b.WriteString(edge.Label)
-		b.WriteString(" ")
-		b.WriteString(ArrowRight)
-		b.WriteString(" ")
-		b.WriteString(targetNode.Label)
 		b.WriteString("\n")
 		b.WriteString("    ")
 		b.WriteString(ArrowDown)

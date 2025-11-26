@@ -188,38 +188,39 @@ func renderMessage(output *strings.Builder, fromIdx, toIdx, actorWidth, spacing,
 
 	// Message line
 	labelLen := len(msg.Label)
-	totalWidth := (maxIdx-minIdx)*(actorWidth+spacing) - spacing
-	lineLen := totalWidth - labelLen - 2
+	// Calculate total width from center of fromIdx to center of toIdx
+	totalWidth := (maxIdx - minIdx) * (actorWidth + spacing)
 
-	// Ensure lineLen is non-negative (handle long labels gracefully)
-	if lineLen < 0 {
-		lineLen = 0
+	// Available width for line = totalWidth - label - spaces - arrow
+	availableForLine := totalWidth - labelLen - 4 // 2 spaces around label + arrow width
+
+	// Ensure minimum line length
+	if availableForLine < 2 {
+		availableForLine = 2
 	}
 
 	if fromIdx < toIdx {
-		// Left to right
-		output.WriteString(strings.Repeat(lineChar, lineLen/2))
-		if lineLen > 0 {
-			output.WriteString(" ")
-		}
+		// Left to right: draw line, label, line, arrow
+		leftLine := availableForLine / 2
+		rightLine := availableForLine - leftLine
+
+		output.WriteString(strings.Repeat(lineChar, leftLine))
+		output.WriteString(" ")
 		output.WriteString(msg.Label)
-		if lineLen > 0 {
-			output.WriteString(" ")
-		}
-		output.WriteString(strings.Repeat(lineChar, lineLen/2))
+		output.WriteString(" ")
+		output.WriteString(strings.Repeat(lineChar, rightLine))
 		output.WriteString(arrow)
 	} else {
-		// Right to left
+		// Right to left: arrow, line, label, line
+		leftLine := availableForLine / 2
+		rightLine := availableForLine - leftLine
+
 		output.WriteString(arrow)
-		output.WriteString(strings.Repeat(lineChar, lineLen/2))
-		if lineLen > 0 {
-			output.WriteString(" ")
-		}
+		output.WriteString(strings.Repeat(lineChar, leftLine))
+		output.WriteString(" ")
 		output.WriteString(msg.Label)
-		if lineLen > 0 {
-			output.WriteString(" ")
-		}
-		output.WriteString(strings.Repeat(lineChar, lineLen/2))
+		output.WriteString(" ")
+		output.WriteString(strings.Repeat(lineChar, rightLine))
 	}
 
 	// Trailing spaces after last actor
