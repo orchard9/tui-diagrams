@@ -78,47 +78,191 @@ func (f *Flowchart) Render() string {
 }
 
 func (f *Flowchart) renderVertical() string {
+	if len(f.Nodes) == 0 {
+		return ""
+	}
+
+	// Build graph structure
+	nodeMap := make(map[string]Node)
+	outgoing := make(map[string][]Edge)
+	incomingCount := make(map[string]int)
+
+	for _, node := range f.Nodes {
+		nodeMap[node.ID] = node
+		incomingCount[node.ID] = 0
+	}
+
+	for _, edge := range f.Edges {
+		outgoing[edge.From] = append(outgoing[edge.From], edge)
+		incomingCount[edge.To]++
+	}
+
+	// Find root nodes (nodes with no incoming edges)
+	var roots []string
+	for _, node := range f.Nodes {
+		if incomingCount[node.ID] == 0 {
+			roots = append(roots, node.ID)
+		}
+	}
+
+	// If no roots found (cycle graph), use first node
+	if len(roots) == 0 {
+		roots = []string{f.Nodes[0].ID}
+	}
+
+	// BFS traversal to determine rendering order
+	var renderOrder []string
+	visited := make(map[string]bool)
+	queue := make([]string, len(roots))
+	copy(queue, roots)
+
+	for len(queue) > 0 {
+		nodeID := queue[0]
+		queue = queue[1:]
+
+		if visited[nodeID] {
+			continue
+		}
+		visited[nodeID] = true
+		renderOrder = append(renderOrder, nodeID)
+
+		// Add children to queue
+		for _, edge := range outgoing[nodeID] {
+			if !visited[edge.To] {
+				queue = append(queue, edge.To)
+			}
+		}
+	}
+
+	// Render nodes in order
 	var output strings.Builder
+	rendered := make(map[string]bool)
 
-	// Simple vertical rendering
-	for i, node := range f.Nodes {
+	for _, nodeID := range renderOrder {
+		if rendered[nodeID] {
+			continue
+		}
+		rendered[nodeID] = true
+
+		node := nodeMap[nodeID]
+
 		// Render the node
-		output.WriteString(renderNode(node))
-
-		// Render edges from this node
-		if i < len(f.Nodes)-1 {
+		if output.Len() > 0 {
 			output.WriteString("\n")
-			// Find edge connecting this node to next
-			for _, edge := range f.Edges {
-				if edge.From == node.ID {
-					output.WriteString(renderVerticalEdge(edge))
-					break
+		}
+		output.WriteString(renderNode(node))
+		output.WriteString("\n")
+
+		// Render ALL outgoing edges from this node
+		edges := outgoing[nodeID]
+		if len(edges) > 0 {
+			for i, edge := range edges {
+				targetNode := nodeMap[edge.To]
+				output.WriteString(renderVerticalEdgeWithTarget(edge, targetNode))
+				if i < len(edges)-1 {
+					output.WriteString("\n")
 				}
 			}
 			output.WriteString("\n")
 		}
 	}
 
-	return output.String()
+	return strings.TrimSpace(output.String())
 }
 
 func (f *Flowchart) renderHorizontal() string {
-	var output strings.Builder
+	if len(f.Nodes) == 0 {
+		return ""
+	}
 
-	for i, node := range f.Nodes {
-		if i > 0 {
-			// Find edge connecting previous node to this one
-			prevNode := f.Nodes[i-1]
-			for _, edge := range f.Edges {
-				if edge.From == prevNode.ID && edge.To == node.ID {
-					output.WriteString(" ")
-					output.WriteString(renderHorizontalEdge(edge))
-					output.WriteString(" ")
-					break
-				}
+	// Build graph structure
+	nodeMap := make(map[string]Node)
+	outgoing := make(map[string][]Edge)
+	incomingCount := make(map[string]int)
+
+	for _, node := range f.Nodes {
+		nodeMap[node.ID] = node
+		incomingCount[node.ID] = 0
+	}
+
+	for _, edge := range f.Edges {
+		outgoing[edge.From] = append(outgoing[edge.From], edge)
+		incomingCount[edge.To]++
+	}
+
+	// Find root nodes (nodes with no incoming edges)
+	var roots []string
+	for _, node := range f.Nodes {
+		if incomingCount[node.ID] == 0 {
+			roots = append(roots, node.ID)
+		}
+	}
+
+	// If no roots found (cycle graph), use first node
+	if len(roots) == 0 {
+		roots = []string{f.Nodes[0].ID}
+	}
+
+	// BFS traversal to determine rendering order
+	var renderOrder []string
+	visited := make(map[string]bool)
+	queue := make([]string, len(roots))
+	copy(queue, roots)
+
+	for len(queue) > 0 {
+		nodeID := queue[0]
+		queue = queue[1:]
+
+		if visited[nodeID] {
+			continue
+		}
+		visited[nodeID] = true
+		renderOrder = append(renderOrder, nodeID)
+
+		// Add children to queue
+		for _, edge := range outgoing[nodeID] {
+			if !visited[edge.To] {
+				queue = append(queue, edge.To)
 			}
 		}
+	}
+
+	// For horizontal, render nodes inline with edges between them
+	var output strings.Builder
+	rendered := make(map[string]bool)
+
+	for i, nodeID := range renderOrder {
+		if rendered[nodeID] {
+			continue
+		}
+		rendered[nodeID] = true
+
+		node := nodeMap[nodeID]
+
+		// Add spacing if not first node
+		if i > 0 {
+			output.WriteString("  ")
+		}
+
+		// Render the node inline
 		output.WriteString(renderNodeInline(node))
+
+		// If there's exactly one outgoing edge, show it inline
+		edges := outgoing[nodeID]
+		if len(edges) == 1 {
+			output.WriteString(" ")
+			output.WriteString(renderHorizontalEdge(edges[0]))
+		} else if len(edges) > 1 {
+			// Multiple edges - show first inline, others on new lines
+			output.WriteString(" ")
+			output.WriteString(renderHorizontalEdge(edges[0]))
+			for j := 1; j < len(edges); j++ {
+				output.WriteString("\n       ")
+				output.WriteString(BoxVertical)
+				output.WriteString(" ")
+				output.WriteString(renderHorizontalEdge(edges[j]))
+			}
+		}
 	}
 
 	return output.String()
@@ -254,6 +398,31 @@ func renderVerticalEdge(edge Edge) string {
 
 	b.WriteString("    ")
 	b.WriteString(ArrowDown)
+
+	return b.String()
+}
+
+func renderVerticalEdgeWithTarget(edge Edge, targetNode Node) string {
+	var b strings.Builder
+
+	if edge.Label != "" {
+		// Edge with label - show label and target
+		b.WriteString("    ")
+		b.WriteString(BoxVertical)
+		b.WriteString(" ")
+		b.WriteString(edge.Label)
+		b.WriteString(" ")
+		b.WriteString(ArrowRight)
+		b.WriteString(" ")
+		b.WriteString(targetNode.Label)
+		b.WriteString("\n")
+		b.WriteString("    ")
+		b.WriteString(ArrowDown)
+	} else {
+		// No label - just show arrow
+		b.WriteString("    ")
+		b.WriteString(ArrowDown)
+	}
 
 	return b.String()
 }
